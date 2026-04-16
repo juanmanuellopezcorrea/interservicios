@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Importar clientes{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Importar clientes desde Excel</h1>
+    <a href="{{ url_for('clientes') }}" class="btn btn-secondary">Volver a Clientes</a>
+</div>
+
+<p>El Excel debe tener en la <strong>primera hoja</strong> estas columnas (la primera fila es cabecera):</p>
+<ul>
+    <li><b>cliente</b> (o <b>nombre</b>) — Nombre del cliente</li>
+    <li><b>tareas</b> (opcional) — Nombres de las tareas incluidas en la propuesta/contrato, separados por <b>;</b></li>
+</ul>
+<p class="form-hint">Ejemplo de celda <b>tareas</b>: <code>Soporte; Mantenimiento; Consultoría</code>. Los nombres deben coincidir exactamente con las tareas ya creadas en el sistema. Si un cliente ya existe por nombre, se omite.</p>
+
+<form method="post" enctype="multipart/form-data" style="margin-top:1rem;">
+    <input type="file" name="archivo" accept=".xlsx" required>
+    <button type="submit" class="btn btn-primary">Importar</button>
+</form>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if tarea else 'Nueva' }} Tarea{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>{{ 'Editar' if tarea else 'Nueva' }} Tarea</h1>
+    
+    <form method="POST" class="form" id="tareaForm">
+        <div class="form-group">
+            <label for="nombre">Nombre:</label>
+            <input type="text" id="nombre" name="nombre" value="{{ tarea.nombre if tarea else '' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="tipo_tarea">Tipo de Tarea:</label>
+            <select id="tipo_tarea" name="tipo_tarea" required>
+                <option value="CLIENTE" {{ 'selected' if not tarea or tarea.tipo_tarea == 'CLIENTE' else '' }}>Cliente</option>
+                <option value="INTERNA" {{ 'selected' if tarea and tarea.tipo_tarea == 'INTERNA' else '' }}>Interna</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Categoría:</label>
+            <input type="text" id="categoria" name="categoria" value="{{ tarea.categoria if tarea and tarea.categoria else '' }}" placeholder="Ej: Contabilidad, Fiscal, Laboral...">
+        </div>
+        
+        <fieldset class="form-group">
+            <legend>Incluida en Cuotas:</legend>
+            <div class="checkbox-group">
+                <label class="checkbox-item">
+                    <input type="checkbox" name="incluida_cuota_basica" value="1" 
+                        {{ 'checked' if tarea and tarea.incluida_cuota_basica else '' }}>
+                    Básico (180€)
+                </label>
+                <label class="checkbox-item">
+                    <input type="checkbox" name="incluida_cuota_estandar" value="1" 
+                        {{ 'checked' if tarea and tarea.incluida_cuota_estandar else '' }}>
+                    Plus (280€)
+                </label>
+                <label class="checkbox-item">
+                    <input type="checkbox" name="incluida_cuota_premium" value="1" 
+                        {{ 'checked' if tarea and tarea.incluida_cuota_premium else '' }}>
+                    Premium (580€)
+                </label>
+            </div>
+        </fieldset>
+        
+        <div class="form-group">
+            <label class="checkbox-item">
+                <input type="checkbox" name="siempre_facturable" value="1" 
+                    {{ 'checked' if tarea and tarea.siempre_facturable else '' }}>
+                Siempre facturable (independiente de cuota)
+            </label>
+        </div>
+        
+        <div class="form-group">
+            <label for="tipo_limite">Tipo de Límite:</label>
+            <select id="tipo_limite" name="tipo_limite">
+                <option value="NINGUNO" {{ 'selected' if not tarea or tarea.tipo_limite == 'NINGUNO' else '' }}>Ninguno</option>
+                <option value="APUNTES" {{ 'selected' if tarea and tarea.tipo_limite == 'APUNTES' else '' }}>Apuntes</option>
+                <option value="HORAS" {{ 'selected' if tarea and tarea.tipo_limite == 'HORAS' else '' }}>Horas</option>
+                <option value="EPIGRAFES" {{ 'selected' if tarea and tarea.tipo_limite == 'EPIGRAFES' else '' }}>Epígrafes IAE</option>
+            </select>
+        </div>
+        
+        <div class="form-group" id="valor_limite_group" style="display: none;">
+            <label for="valor_limite">Valor del Límite:</label>
+            <input type="number" id="valor_limite" name="valor_limite" min="0" 
+                value="{{ tarea.valor_limite if tarea and tarea.valor_limite else '' }}">
+        </div>
+        
+        <fieldset class="form-group">
+            <legend>Facturación Fuera de Cuota:</legend>
+            <div class="form-group">
+                <label class="checkbox-item">
+                    <input type="checkbox" name="tarifa_hora_fuera_cuota" value="1" id="tarifa_hora_check"
+                        {{ 'checked' if tarea and tarea.tarifa_hora_fuera_cuota else '' }}>
+                    Tarifa por hora
+                </label>
+            </div>
+            <div class="form-group" id="precio_fijo_group">
+                <label for="precio_fijo_fuera_cuota">Precio Fijo o por Hora (€):</label>
+                <input type="number" id="precio_fijo_fuera_cuota" name="precio_fijo_fuera_cuota" step="0.01" min="0" 
+                    value="{{ "%.2f"|format(tarea.precio_fijo_fuera_cuota) if tarea and tarea.precio_fijo_fuera_cuota else '' }}"
+                    placeholder="{{ 'Ej: 50 (€/h si está marcado Tarifa por hora)' if not tarea else '' }}">
+                <small class="form-hint">Si «Tarifa por hora» está marcado = €/hora; si no = importe fijo por servicio.</small>
+            </div>
+        </fieldset>
+        
+        <div class="form-group">
+            <label class="checkbox-item">
+                <input type="checkbox" name="tarifa_manual" value="1" 
+                    {{ 'checked' if tarea and tarea.tarifa_manual else '' }}>
+                Tarifa manual (requiere introducción manual del importe)
+            </label>
+        </div>
+        
+        <div class="form-group">
+            <label class="checkbox-item">
+                <input type="checkbox" name="requiere_cliente" value="1" 
+                    {{ 'checked' if not tarea or tarea.requiere_cliente else '' }}>
+                Requiere cliente asociado
+            </label>
+        </div>
+        
+        <div class="form-group">
+            <label for="notas">Notas:</label>
+            <textarea id="notas" name="notas" rows="3" placeholder="Información adicional sobre la tarea...">{{ tarea.notas if tarea and tarea.notas else '' }}</textarea>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a href="{{ url_for('tareas') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Mostrar/ocultar valor_limite según tipo_limite
+document.getElementById('tipo_limite').addEventListener('change', function() {
+    const valorLimiteGroup = document.getElementById('valor_limite_group');
+    if (this.value !== 'NINGUNO') {
+        valorLimiteGroup.style.display = 'block';
+        document.getElementById('valor_limite').required = true;
+    } else {
+        valorLimiteGroup.style.display = 'none';
+        document.getElementById('valor_limite').required = false;
+    }
+});
+
+// El campo Precio Fijo/Fuera de cuota siempre visible (precio fijo o €/h según checkbox)
+
+// Ejecutar al cargar para establecer estado inicial de valor_limite
+document.getElementById('tipo_limite').dispatchEvent(new Event('change'));
+</script>
+{% endblock %}

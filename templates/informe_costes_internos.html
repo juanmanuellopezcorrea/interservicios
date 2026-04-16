@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Informe de Costes Internos (todos los clientes) - {{ nombre_mes }} {{ año }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Informe de Costes Internos (todos los clientes)</h1>
+    <p class="subtitle">{{ nombre_mes }} {{ año }}</p>
+    <a href="{{ url_for('informe_costes_internos_excel', mes=mes, anio=año) }}" class="btn btn-primary">Descargar Excel</a>
+    <a href="{{ url_for('informe') }}" class="btn btn-secondary">Volver a Informes</a>
+</div>
+
+<p class="info-box">
+    <strong>Uso:</strong> Informe único con el coste interno de todos los clientes en el mes seleccionado. Control de costes y productividad; no se calculan ingresos ni rentabilidad. La columna "Servicios fuera cuota" es informativa para facturación.
+</p>
+
+<div class="table-responsive">
+    <table class="data-table informe-costes">
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                {% for t in trabajadores %}
+                <th>{{ t.nombre }}</th>
+                {% endfor %}
+                <th>COSTE INTERNO TOTAL</th>
+                <th>SERVICIOS FUERA CUOTA</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fila in filas %}
+            <tr>
+                <td>{{ fila.cliente.nombre }}</td>
+                {% for t in trabajadores %}
+                <td>{{ "%.1f"|format(fila.horas_por_trabajador.get(t.nombre, 0)) }}h</td>
+                {% endfor %}
+                <td><strong>{{ "%.2f"|format(fila.coste_interno_total) }} €</strong></td>
+                <td>{{ "%.2f"|format(fila.servicios_fuera_cuota) }} €</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="{{ trabajadores|length + 3 }}" class="text-center">No hay registros en este período</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if filas %}
+        <tfoot>
+            <tr class="totales">
+                <td><strong>TOTALES</strong></td>
+                {% for t in trabajadores %}
+                <td><strong>{{ "%.1f"|format(totales_horas.get(t.nombre, 0)) }}h</strong></td>
+                {% endfor %}
+                <td><strong>{{ "%.2f"|format(total_coste) }} €</strong></td>
+                <td><strong>{{ "%.2f"|format(total_servicios) }} €</strong></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+{% if filas %}
+<p class="form-hint">
+    NOTA: Coste interno = suma de (horas × coste_hora) de cada trabajador. Solo control de costes; no se contabilizan ingresos.
+</p>
+{% endif %}
+{% endblock %}

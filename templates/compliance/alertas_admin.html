@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Alertas compliance{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Alertas de compliance</h1>
+    <p>Pendientes: {{ total_alertas }}</p>
+    <form method="post" action="{{ url_for('compliance.ejecutar_revision_compliance_manual') }}" style="display:inline;">
+        <button type="submit" class="btn btn-secondary">Revisión manual</button>
+    </form>
+</div>
+<table class="data-table">
+    <thead><tr><th>Prioridad</th><th>Título</th><th>Cliente</th><th>Acciones</th></tr></thead>
+    <tbody>
+    {% for a in alertas %}
+    <tr>
+        <td>{{ a.prioridad }}</td>
+        <td>{{ a.titulo }}</td>
+        <td><a href="{{ url_for('compliance.ver_cliente_compliance', id=a.cliente_id) }}">Cliente #{{ a.cliente_id }}</a></td>
+        <td>
+            <form method="post" action="{{ url_for('compliance.revisar_cliente_desde_alerta', aid=a.id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-small">En revisión</button>
+            </form>
+            <form method="post" action="{{ url_for('compliance.resolver_alerta_compliance', aid=a.id) }}" style="display:inline;">
+                <input type="text" name="observaciones" placeholder="Notas">
+                <button type="submit" class="btn btn-small">Resolver</button>
+            </form>
+        </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4">No hay alertas.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

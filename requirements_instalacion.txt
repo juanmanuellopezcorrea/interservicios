@@ -1,0 +1,19 @@
+# Dependencias para instalar en el servidor (aplicación Flask + módulo conciliador).
+# Uso: pip install -r requirements_instalacion.txt
+# Tras crear el venv: python -m venv venv && activar && pip install -r requirements_instalacion.txt
+
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-Mail==0.9.1
+Werkzeug==3.0.1
+openpyxl>=3.1.5
+APScheduler==3.10.4
+pandas
+rapidfuzz
+pdfplumber
+pillow
+scikit-learn
+python-dateutil
+pytesseract
+# Opcional: interfaz Streamlit del conciliador (conciliador_inteligente/ui) — no necesaria para la app web principal
+# streamlit

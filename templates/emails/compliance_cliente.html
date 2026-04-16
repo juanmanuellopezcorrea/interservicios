@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Obligaciones legales</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.5; color: #333; }
+        .container { max-width: 720px; margin: 0 auto; padding: 16px; }
+        .header { background: #2c3e50; color: #fff; padding: 16px; }
+        .obligacion { border: 1px solid #ddd; margin: 16px 0; padding: 12px; border-radius: 6px; }
+        .item { margin: 6px 0; padding-left: 12px; }
+        .footer { margin-top: 24px; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1 style="margin:0;font-size:1.25rem;">Obligaciones legales vigentes</h1>
+        <p style="margin:8px 0 0 0;">{{ cliente.razon_social or cliente.nombre }}</p>
+    </div>
+    <p>Estimado/a {{ cliente.persona_contacto or 'cliente' }},</p>
+    <p>Resumen según los datos facilitados (referencia general, no asesoramiento legal):</p>
+    <ul>
+        <li>Forma: {{ cliente.get_tipo_sociedad_display() }}</li>
+        {% if cliente.tiene_empleados %}<li>Empleados: {{ cliente.num_empleados_actual }}</li>{% endif %}
+        {% if cliente.tiene_local %}<li>Local físico: sí</li>{% endif %}
+        {% if cliente.cnae_descripcion %}<li>Actividad: {{ cliente.cnae_descripcion }}</li>{% endif %}
+    </ul>
+    <h2>Obligaciones pendientes o en curso</h2>
+    {% for oblig in obligaciones %}
+    {% set catalogo = oblig.catalogo %}
+    <div class="obligacion">
+        <h3 style="margin-top:0;">{{ catalogo.nombre }}</h3>
+        <ul>
+        {% for item in catalogo.get_items() %}
+            <li class="item">{{ item }}</li>
+        {% endfor %}
+        </ul>
+        <p><small>Normativa: {{ catalogo.normativa }}<br>
+        {% if catalogo.obligatoria %}Plazo: {{ catalogo.plazo }}<br>Sanción: {{ catalogo.sancion_descripcion }}{% endif %}</small></p>
+    </div>
+    {% endfor %}
+    <h2>Resumen</h2>
+    <p>Total obligaciones aplicables: {{ informe.total_obligaciones }}. Cumplidas: {{ informe.obligaciones_cumplidas }}, pendientes: {{ informe.obligaciones_pendientes }}.</p>
+    <p>Nivel de riesgo orientativo: {{ informe.nivel_riesgo or '—' }}.</p>
+    <div class="footer">
+        <p>Informe generado el {{ informe.fecha_generacion.strftime('%d/%m/%Y') if informe.fecha_generacion else '—' }}.</p>
+        <p>{{ remitente.nombre }}{% if remitente.email %} — {{ remitente.email }}{% endif %}</p>
+    </div>
+</div>
+</body>
+</html>

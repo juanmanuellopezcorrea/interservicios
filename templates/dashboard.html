@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Panel Principal{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>Panel Principal</h1>
+    
+    <div class="dashboard-welcome">
+        <p>Bienvenido, <strong>{{ session.username }}</strong> ({{ session.rol }})</p>
+    </div>
+    
+    <div class="dashboard-menu">
+        {% if session.rol == 'ADMIN' %}
+        <div class="menu-card">
+            <h2>Gestión de Datos</h2>
+            <ul>
+                <li><a href="{{ url_for('clientes') }}">Clientes</a></li>
+                <li><a href="{{ url_for('trabajadores') }}">Trabajadores</a></li>
+                <li><a href="{{ url_for('tareas') }}">Tareas</a></li>
+            </ul>
+        </div>
+        
+        <div class="menu-card">
+            <h2>Informes</h2>
+            <ul>
+                <li><a href="{{ url_for('informe') }}">Generar Informe Mensual</a></li>
+            </ul>
+        </div>
+        {% endif %}
+        
+        <div class="menu-card">
+            <h2>Registro de Horas</h2>
+            <ul>
+                <li><a href="{{ url_for('horas') }}">Ver y Gestionar Horas</a></li>
+                <li><a href="{{ url_for('hora_nuevo') }}">Registrar Nuevas Horas</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Pendientes cuestionario{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-1">Pendientes del cuestionario normativo</h1>
+      <div class="text-muted">Clientes con pendientes: <span class="fw-semibold">{{ total_clientes }}</span> · Ítems pendientes: <span class="fw-semibold">{{ total_pendientes }}</span></div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('dashboard') }}">Panel</a>
+  </div>
+
+  {% if not pendientes %}
+    <div class="alert alert-success">No hay pendientes.</div>
+  {% endif %}
+
+  {% for cliente, items in pendientes %}
+    <div class="card shadow-sm mb-3">
+      <div class="card-body">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <div class="fw-semibold">{{ cliente.nombre }}</div>
+          <a class="btn btn-sm btn-primary" href="{{ url_for('compliance.ver_compliance', cliente_id=cliente.id) }}">Abrir cuestionario</a>
+        </div>
+        <ul class="mt-2 mb-0">
+          {% for it in items %}
+            <li>{{ it.campo }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if cliente else 'Nuevo' }} Cliente{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>{{ 'Editar' if cliente else 'Nuevo' }} Cliente</h1>
+    
+    <form method="POST" class="form">
+        <div class="form-group">
+            <label for="nombre">Nombre:</label>
+            <input type="text" id="nombre" name="nombre" value="{{ cliente.nombre if cliente else '' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="modalidad_cuota">Modalidad de Cuota:</label>
+            <select id="modalidad_cuota" name="modalidad_cuota" required>
+                <option value="SIN_CUOTA" {{ 'selected' if not cliente or cliente.modalidad_cuota == 'SIN_CUOTA' else '' }}>Sin Cuota</option>
+                <option value="BASICO" {{ 'selected' if cliente and cliente.modalidad_cuota == 'BASICO' else '' }}>Básico</option>
+                <option value="PLUS" {{ 'selected' if cliente and cliente.modalidad_cuota == 'PLUS' else '' }}>Plus</option>
+                <option value="PREMIUM" {{ 'selected' if cliente and cliente.modalidad_cuota == 'PREMIUM' else '' }}>Premium</option>
+            </select>
+            <small class="form-hint">Define qué tareas van incluidas en cuota (sin facturar aparte). Solo se facturan los servicios fuera de cuota.</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="epigrafes_iae_contratados">Epígrafes IAE Contratados:</label>
+            <input type="number" id="epigrafes_iae_contratados" name="epigrafes_iae_contratados" min="0" 
+                value="{{ cliente.epigrafes_iae_contratados if cliente and cliente.epigrafes_iae_contratados else '0' }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="horas_asesoria_fiscal_mes">Horas Asesoría Fiscal por Mes:</label>
+            <input type="number" id="horas_asesoria_fiscal_mes" name="horas_asesoria_fiscal_mes" step="0.01" min="0" 
+                value="{{ "%.2f"|format(cliente.horas_asesoria_fiscal_mes) if cliente and cliente.horas_asesoria_fiscal_mes else '0' }}">
+        </div>
+
+        <div class="form-group">
+            <label>Tareas incluidas en contrato (cuota):</label>
+            <p class="form-hint">Marca las tareas que van incluidas en la cuota mensual. Las no marcadas se facturarán aparte (precio/hora de la tarea).</p>
+            <div class="checkbox-group">
+                {% for t in tareas %}
+                <label class="checkbox-item">
+                    <input type="checkbox" name="tareas_incluidas" value="{{ t.id }}"
+                        {% if cliente and t in cliente.tareas_incluidas %}checked{% endif %}>
+                    {{ t.nombre }}
+                    {% if t.precio_fijo_fuera_cuota %}
+                        — {{ "%.2f"|format(t.precio_fijo_fuera_cuota) }} €{% if t.tarifa_hora_fuera_cuota %}/h{% endif %}
+                    {% elif t.precio_hora %}
+                        — {{ "%.2f"|format(t.precio_hora) }} €/h
+                    {% endif %}
+                </label>
+                {% else %}
+                <p class="text-muted">No hay tareas. <a href="{{ url_for('tareas') }}">Créalas o impórtalas</a> primero.</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a href="{{ url_for('clientes') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

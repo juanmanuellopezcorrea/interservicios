@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Gestión de Servicios Profesionales</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <h1>Gestión de Servicios Profesionales</h1>
+            <h2>Iniciar Sesión</h2>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="form-group">
+                    <label for="email">Usuario (tu email):</label>
+                    <input type="email" id="email" name="email" placeholder="tu-email@empresa.com" autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="username">Usuario alternativo (solo cuentas antiguas):</label>
+                    <input type="text" id="username" name="username" placeholder="Solo si usas nombre de usuario">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Contraseña:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+            </form>
+            
+            <p class="login-info">Introduce tu email (usuario asignado por el administrador) y la contraseña. Puedes cambiar tu contraseña una vez dentro.</p>
+        </div>
+    </div>
+</body>
+</html>

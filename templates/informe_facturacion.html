@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Informe de Facturación - {{ nombre_mes }} {{ año }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Informe de Facturación Mensual</h1>
+    <p class="subtitle">{{ nombre_mes }} {{ año }}</p>
+    <a href="{{ url_for('informe_facturacion_excel', mes=mes, anio=año) }}" class="btn btn-primary">Descargar Excel</a>
+    <a href="{{ url_for('informe_facturacion', mes=mes, anio=año) }}?pdf=1" class="btn btn-secondary" onclick="window.print(); return false;">Imprimir / Guardar como PDF</a>
+    {% if es_admin %}
+    <a href="{{ url_for('informe') }}" class="btn btn-secondary">Volver a Informes</a>
+    {% else %}
+    <a href="{{ url_for('horas_semana') }}" class="btn btn-secondary">Volver</a>
+    {% endif %}
+</div>
+
+<form method="get" class="form-inline" style="margin-bottom: 1rem;">
+    <label for="cliente_id">Filtrar por cliente:</label>
+    <select name="cliente_id" id="cliente_id" onchange="this.form.submit()">
+        <option value="">Todos los clientes</option>
+        {% for c in clientes %}
+        <option value="{{ c.id }}" {{ 'selected' if cliente_filtro and cliente_filtro.id == c.id else '' }}>{{ c.nombre }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<p class="info-box">
+    <strong>Uso:</strong> Solo se incluyen servicios facturables (FACTURABLE, LÍMITE SUPERADO, TARIFA MANUAL).
+    Los servicios incluidos en cuota no aparecen aquí. Este informe sirve para preparar facturas; los importes no se contabilizan como ingresos en el sistema.
+</p>
+
+{% for dato in datos_clientes %}
+<div class="informe-cliente {{ 'no-print' if request.args.get('pdf') else '' }}">
+    <h2>{{ dato.cliente.nombre }}</h2>
+    <p><strong>Modalidad:</strong> {{ dato.cliente.modalidad_cuota }}</p>
+    <p><strong>SERVICIOS FUERA DE CUOTA:</strong></p>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Concepto</th>
+                <th>Detalle</th>
+                <th>Importe</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lin in dato.lineas %}
+            <tr>
+                <td>{{ lin.concepto }}</td>
+                <td>{{ lin.detalle }}</td>
+                <td>{{ lin.importe_str }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if dato.pendientes > 0 %}
+    <p class="alert-warning">⚠ Hay {{ dato.pendientes }} concepto(s) pendientes de asignar tarifa manual.</p>
+    {% endif %}
+
+    <p><strong>SUBTOTAL SERVICIOS EXTRA:</strong> {{ "%.2f"|format(dato.subtotal_extra) }} €</p>
+    <p><strong>TOTAL A FACTURAR:</strong> {{ "%.2f"|format(dato.total_factura) }} €
+        {% if dato.cuota_mensual and dato.cuota_mensual > 0 %}
+        (Cuota {{ "%.2f"|format(dato.cuota_mensual) }} € + Servicios extra {{ "%.2f"|format(dato.subtotal_extra) }} €)
+        {% else %}
+        (Sin cuota mensual - servicios puntuales)
+        {% endif %}
+    </p>
+    <hr>
+</div>
+{% else %}
+<p class="text-center">No hay registros facturables en este período para los clientes seleccionados.</p>
+{% endfor %}
+
+{% if datos_clientes %}
+<h3>Resumen de facturación (solo para control)</h3>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Cliente</th>
+            <th>Total a facturar</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for dato in datos_clientes %}
+        <tr>
+            <td>{{ dato.cliente.nombre }}</td>
+            <td>{{ "%.2f"|format(dato.total_factura) }} €</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<p class="form-hint">NOTA: Este resumen es solo para control. Los importes no se contabilizan como ingresos en el sistema.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Trabajadores{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Gestión de Trabajadores</h1>
+    <a href="{{ url_for('trabajador_nuevo') }}" class="btn btn-primary">Nuevo Trabajador</a>
+</div>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Coste por Hora</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for trabajador in trabajadores %}
+        <tr>
+            <td>{{ trabajador.id }}</td>
+            <td>{{ trabajador.nombre }}</td>
+            <td>{{ "%.2f"|format(trabajador.coste_hora) }} €</td>
+            <td class="actions">
+                <a href="{{ url_for('trabajador_editar', id=trabajador.id) }}" class="btn btn-small btn-secondary">Editar</a>
+                <form method="POST" action="{{ url_for('trabajador_eliminar', id=trabajador.id) }}" style="display:inline;" 
+                      onsubmit="return confirm('¿Está seguro de eliminar este trabajador?{% if trabajador.num_registros_horas > 0 %}\n\nADVERTENCIA: Este trabajador tiene {{ trabajador.num_registros_horas }} registro(s) de horas asociado(s) que también se eliminarán.{% endif %}');">
+                    <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4" class="text-center">No hay trabajadores registrados</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,36 @@
+================================================================================
+  Gestión de Servicios Profesionales — Instalación en servidor
+================================================================================
+
+CONTENIDO DEL ZIP
+  - Código Python (app.py, models.py, compliance_*, conciliador_inteligente/, …)
+  - Plantillas (templates/) y estáticos (static/)
+  - Scripts (scripts/)
+  - requirements.txt (dependencias mínimas originales del proyecto)
+  - requirements_instalacion.txt — lista ampliada (incluye conciliador inteligente)
+  - MANUAL_APP.md — manual (apartados 16 y 17: servidor, compliance)
+
+REQUISITOS
+  - Python 3.10+
+  - OCR en PDFs (opcional): Tesseract en el sistema + PATH
+
+PASOS RÁPIDOS (Linux)
+  cd /ruta/descomprimida
+  python3 -m venv venv && source venv/bin/activate
+  pip install -r requirements_instalacion.txt && pip install gunicorn
+  python migrate_compliance.py
+  python scripts/inicializar_catalogo_obligaciones.py
+  gunicorn -w 1 -b 0.0.0.0:5000 "app:app"
+
+PASOS RÁPIDOS (Windows)
+  python -m venv venv
+  venv\Scripts\activate
+  pip install -r requirements_instalacion.txt
+  python migrate_compliance.py
+  python scripts\inicializar_catalogo_obligaciones.py
+  python app.py
+
+PRODUCCIÓN: cambiar SECRET_KEY en app.py; SQLite requiere permisos de escritura; carpeta uploads_compliance para documentos.
+
+Detalle: MANUAL_APP.md sección 16.
+================================================================================

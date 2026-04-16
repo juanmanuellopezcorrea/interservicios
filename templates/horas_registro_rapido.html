@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% block title %}Registro rápido de horas{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>⏱️ Registro de horas (rápido y temporizador)</h1>
+    <p class="text-muted">Suma tiempo al mismo cliente/tarea/día. Mínimo 5 minutos por registro.</p>
+</div>
+
+<nav class="subnav-horas-rapido">
+    <a href="{{ url_for('horas_registro_rapido', modo='quick') }}" class="{{ 'active' if modo == 'quick' else '' }}">⚡ Rápido</a>
+    <a href="{{ url_for('horas_registro_rapido', modo='visual') }}" class="{{ 'active' if modo == 'visual' else '' }}">🎨 Visual</a>
+    <a href="{{ url_for('horas_semana') }}">📅 Vista semanal clásica</a>
+</nav>
+
+{% if modo == 'quick' %}
+<div class="stats-widget" id="stats-widget">
+    <h4>📊 Hoy</h4>
+    <div class="stat"><span class="label">Horas registradas:</span> <span class="value" id="horas-hoy-stat">—</span></div>
+    <div class="stat"><span class="label">Cliente más usado hoy:</span> <span class="value" id="cliente-top-stat">—</span></div>
+</div>
+
+<section class="control-horario-box">
+    <h2>📋 Mis plantillas</h2>
+    <div class="plantillas-toolbar">
+        <label for="sel_plantilla">Usar plantilla</label>
+        <select id="sel_plantilla">
+            <option value="">— Elegir —</option>
+            {% for pl in plantillas %}
+            <option value="{{ pl.id }}"
+                data-cliente="{{ pl.cliente_id }}"
+                data-tarea="{{ pl.tarea_id }}"
+                data-horas="{{ pl.horas_default }}"
+                data-desc="{{ (pl.descripcion_default or '')|e }}">{{ pl.nombre }}</option>
+            {% endfor %}
+        </select>
+        <button type="button" class="btn btn-outline btn-small" id="btn_aplicar_plantilla">Aplicar</button>
+    </div>
+    {% if plantillas %}
+    <div class="plantillas-lista">
+            {% for pl in plantillas %}
+            <div class="plantilla-fila">
+                    <form method="post" class="form-edit-plantilla">
+                        <input type="hidden" name="accion" value="editar_plantilla">
+                        <input type="hidden" name="plantilla_id" value="{{ pl.id }}">
+                        <input type="hidden" name="modo" value="quick">
+                        {% if trabajadores %}<input type="hidden" name="trabajador_id" value="{{ trabajador_id }}">{% endif %}
+                        <input name="edit_nombre" value="{{ pl.nombre }}" style="width:110px;" title="Nombre">
+                        <select name="edit_cliente_id">{% for c in clientes %}<option value="{{ c.id }}" {{ 'selected' if c.id == pl.cliente_id else '' }}>{{ c.nombre }}</option>{% endfor %}</select>
+                        <select name="edit_tarea_id">{% for t in tareas %}<option value="{{ t.id }}" {{ 'selected' if t.id == pl.tarea_id else '' }}>{{ t.nombre }}</option>{% endfor %}</select>
+                        <input name="edit_horas" value="{{ pl.horas_default }}" style="width:48px;" title="Horas por defecto">
+                        <input name="edit_descripcion" value="{{ pl.descripcion_default or '' }}" placeholder="Nota" style="width:120px;">
+                        <button type="submit" class="btn btn-small">Guardar</button>
+                    </form>
+                    <form method="post" class="form-inline" style="display:inline;" onsubmit="return confirm('¿Eliminar plantilla?');">
+                        <input type="hidden" name="accion" value="eliminar_plantilla">
+                        <input type="hidden" name="plantilla_id" value="{{ pl.id }}">
+                        <input type="hidden" name="modo" value="quick">
+                        {% if trabajadores %}<input type="hidden" name="trabajador_id" value="{{ trabajador_id }}">{% endif %}
+                        <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
+                    </form>
+            </div>
+            {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">Aún no tienes plantillas. Rellena el registro rápido y pulsa «Guardar como plantilla».</p>
+    {% endif %}
+</section>
+
+<section class="control-horario-box">
+    <h2>⚡ Registro rápido</h2>
+    <form method="post" action="{{ url_for('horas_registro_rapido', modo='quick') }}" class="form form-rapido" id="form-registro-rapido">
+        <input type="hidden" name="modo" value="quick">
+        {% if trabajadores %}
+        <div class="form-group">
+            <label for="trabajador_id">Trabajador</label>
+            <select name="trabajador_id" id="trabajador_id">
+                {% for tr in trabajadores %}
+                <option value="{{ tr.id }}" {{ 'selected' if tr.id == trabajador_id else '' }}>{{ tr.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        <div class="form-group cliente-autocomplete-wrap">
+            <label for="cliente_buscar">Cliente <span class="text-muted">(escribe 2+ letras)</span></label>
+            <input type="hidden" name="cliente_id" id="cliente_id_hidden" value="{{ pre_cliente_id or '' }}" required>
+            <input type="text" id="cliente_buscar" name="cliente_nombre" autocomplete="off" placeholder="Buscar cliente…" value="{% if pre_cliente_id %}{% for c in clientes %}{% if c.id == pre_cliente_id %}{{ c.nombre }}{% endif %}{% endfor %}{% endif %}">
+            <ul id="cliente_sugerencias" class="sugerencias-lista" style="display:none;"></ul>
+        </div>
+        <div class="form-group">
+            <label for="tarea_id">Tarea</label>
+            <select name="tarea_id" id="tarea_id" required>
+                <option value="">— Seleccionar —</option>
+                {% for t in tareas %}
+                <option value="{{ t.id }}" {{ 'selected' if pre_tarea_id == t.id else '' }}>{{ t.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="fecha">Fecha</label>
+            <input type="date" name="fecha" id="fecha" value="{{ hoy_str }}">
+        </div>
+        <div class="form-group">
+            <label>Tiempo rápido</label>
+            <div class="btn-group-rapido">
+                <button type="submit" name="preset_minutos" value="15" class="btn btn-tiempo">15m</button>
+                <button type="submit" name="preset_minutos" value="30" class="btn btn-tiempo">30m</button>
+                <button type="submit" name="preset_minutos" value="45" class="btn btn-tiempo">45m</button>
+                <button type="submit" name="preset_minutos" value="60" class="btn btn-tiempo">1h</button>
+                <button type="submit" name="preset_minutos" value="90" class="btn btn-tiempo">1h 30m</button>
+                <button type="submit" name="preset_minutos" value="120" class="btn btn-tiempo">2h</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="horas_custom">O horas decimales (ej. 1.5)</label>
+            <input type="text" name="horas_custom" id="horas_custom" placeholder="Ej. 0.5" style="max-width:120px;">
+            <button type="submit" class="btn btn-primary">Guardar cantidad</button>
+        </div>
+        <div class="form-group">
+            <label for="observaciones">Nota (opcional)</label>
+            <input type="text" name="observaciones" id="observaciones" style="width:100%;max-width:480px;">
+        </div>
+        <div class="form-group plantilla-guardar-row">
+            <label for="nombre_plantilla">Guardar como plantilla</label>
+            <input type="text" name="nombre_plantilla" id="nombre_plantilla" placeholder="Nombre de la plantilla" style="max-width:200px;">
+            <input type="text" name="horas_plantilla" id="horas_plantilla" placeholder="H. por defecto" style="width:90px;" value="1">
+            <input type="text" name="descripcion_plantilla" id="descripcion_plantilla" placeholder="Nota plantilla" style="max-width:200px;">
+            <button type="submit" name="accion" value="crear_plantilla" class="btn btn-secondary" id="btn_crear_plantilla" formnovalidate>💾 Guardar plantilla</button>
+        </div>
+    </form>
+</section>
+
+<section class="control-horario-box">
+    <h2>▶️ Temporizador de tarea</h2>
+    <p class="text-muted">Cuenta el tiempo y al finalizar lo guarda en <strong>hoy</strong>.</p>
+    <div id="timer-local-ui" class="timer-panel">
+        <div class="form-inline">
+            <select id="timer_cliente" style="min-width:180px;">
+                <option value="">Cliente…</option>
+                {% for c in clientes %}<option value="{{ c.id }}">{{ c.nombre }}</option>{% endfor %}
+            </select>
+            <select id="timer_tarea" style="min-width:180px;">
+                <option value="">Tarea…</option>
+                {% for t in tareas %}<option value="{{ t.id }}">{{ t.nombre }}</option>{% endfor %}
+            </select>
+            <input type="text" id="timer_nota" placeholder="Nota opcional" style="min-width:160px;">
+            <button type="button" class="btn btn-success" id="btn_timer_start">Iniciar</button>
+            <button type="button" class="btn btn-secondary" id="btn_timer_pause" style="display:none;">Pausar</button>
+            <button type="button" class="btn btn-secondary" id="btn_timer_resume" style="display:none;">Reanudar</button>
+            <button type="button" class="btn btn-primary" id="btn_timer_stop" style="display:none;">Finalizar y guardar</button>
+            <button type="button" class="btn btn-outline" id="btn_timer_cancel" style="display:none;">Cancelar</button>
+        </div>
+        <p id="timer_display" class="timer-display timer-activo-wrap"></p>
+        <div id="modal-finalizar-timer" class="modal-overlay" style="display:none;">
+            <div class="modal-box">
+                <h3>⏹️ Finalizar temporizador</h3>
+                <p>Tiempo registrado: <strong id="tiempo-exacto-modal">—</strong></p>
+                <p class="text-muted">¿Cómo quieres guardarlo?</p>
+                <div class="btn-group-rapido">
+                    <button type="button" class="btn btn-tiempo" data-r="">Tiempo exacto</button>
+                    <button type="button" class="btn btn-tiempo" data-r="15">15 min</button>
+                    <button type="button" class="btn btn-tiempo" data-r="30">30 min</button>
+                    <button type="button" class="btn btn-tiempo" data-r="60">1 hora</button>
+                </div>
+                <button type="button" class="btn btn-outline" id="btn_cerrar_modal_timer" style="margin-top:12px;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="control-horario-box historial-section">
+    <h2>📜 Historial</h2>
+    <div class="filtros-historial form-inline">
+        <select id="filtro-periodo">
+            <option value="hoy">Hoy</option>
+            <option value="semana">Esta semana</option>
+            <option value="mes">Este mes</option>
+        </select>
+        <select id="filtro-cliente-hist">
+            <option value="">Todos los clientes</option>
+            {% for c in clientes %}<option value="{{ c.id }}">{{ c.nombre }}</option>{% endfor %}
+        </select>
+        <button type="button" class="btn btn-small" id="btn_refrescar_historial">Actualizar</button>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-bordered" id="tabla-historial">
+            <thead><tr><th>Fecha</th><th>Cliente</th><th>Tarea</th><th>Horas</th><th>Nota</th></tr></thead>
+            <tbody id="tabla-historial-body"></tbody>
+        </table>
+    </div>
+</section>
+
+<section class="control-horario-box">
+    <h2>⏮️ Últimos registros (repetir)</h2>
+    {% if ultimos %}
+    <ul class="lista-ultimos">
+        {% for u in ultimos %}
+        <li>
+            <strong>{{ u.fecha.strftime('%d/%m/%Y') }}</strong> —
+            {{ u.cliente.nombre if u.cliente else '?' }} — {{ u.tarea.nombre if u.tarea else '?' }} —
+            {{ u.horas }}h
+            <a href="{{ url_for('horas_registro_rapido', cliente_id=u.cliente_id, tarea_id=u.tarea_id) }}" class="btn btn-small">↻ Repetir</a>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>Sin registros recientes.</p>
+    {% endif %}
+</section>
+{% endif %}
+
+{% if modo == 'visual' %}
+<section class="control-horario-box">
+    <h2>🎨 Registro visual (arrastrar tarea al cliente)</h2>
+    <p class="text-muted">Arrastra una tarjeta de tarea sobre la zona del cliente y elige cuánto tiempo registrar.</p>
+    <div class="dnd-layout">
+        <div class="tareas-disponibles">
+            <h3>Tareas</h3>
+            <div class="drag-tareas-inner">
+                {% for t in tareas[:18] %}
+                <div class="tarea-card" draggable="true" data-tarea-id="{{ t.id }}" data-tarea-nombre="{{ t.nombre|e }}">📋 {{ t.nombre }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="clientes-dnd-grid">
+            {% for vc in top_clientes %}
+            <div class="cliente-card-dnd" data-cliente-id="{{ vc.id }}">
+                <h3>🏢 {{ vc.nombre }}</h3>
+                <p class="text-muted">{{ "%.1f"|format(vc.horas) }}h (30 días)</p>
+                <div class="drop-zone" data-drop-cliente="{{ vc.id }}">Soltar tarea aquí</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+<div id="modal-drop-tiempo" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+        <h3 id="modal-drop-titulo">Registrar tiempo</h3>
+        <p id="modal-drop-sub"></p>
+        <div class="btn-group-rapido">
+            <button type="button" class="btn btn-tiempo btn-drop-min" data-min="15">15m</button>
+            <button type="button" class="btn btn-tiempo btn-drop-min" data-min="30">30m</button>
+            <button type="button" class="btn btn-tiempo btn-drop-min" data-min="60">1h</button>
+            <button type="button" class="btn btn-tiempo btn-drop-min" data-min="120">2h</button>
+        </div>
+        <button type="button" class="btn btn-outline" id="btn_cerrar_drop">Cerrar</button>
+    </div>
+</div>
+{% endif %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/registro_rapido.css') }}">
+<script>
+window.REGISTRO_RAPIDO_URLS = {
+    buscarClientes: '{{ url_for("api_clientes_buscar") }}',
+    estadisticasHoy: '{{ url_for("api_estadisticas_hoy") }}',
+    historial: '{{ url_for("api_historial") }}',
+    guardarRapido: '{{ url_for("api_horas_guardar_rapido") }}',
+    timerEstado: '{{ url_for("api_timer_estado") }}',
+    timerIniciar: '{{ url_for("api_timer_iniciar") }}',
+    timerPausar: '{{ url_for("api_timer_pausar") }}',
+    timerReanudar: '{{ url_for("api_timer_reanudar") }}',
+    timerFinalizar: '{{ url_for("api_timer_finalizar") }}',
+    timerCancelar: '{{ url_for("api_timer_cancelar") }}',
+};
+window.MODO_REGISTRO = '{{ modo }}';
+</script>
+<script src="{{ url_for('static', filename='js/registro_rapido.js') }}"></script>
+{% endblock %}

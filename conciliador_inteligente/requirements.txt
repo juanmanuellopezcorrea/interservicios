@@ -1,0 +1,8 @@
+pandas
+rapidfuzz
+pdfplumber
+pytesseract
+pillow
+scikit-learn
+streamlit
+python-dateutil

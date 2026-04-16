@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Informe mensual de horas - {{ nombre_mes }} {{ año }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Informe mensual de horas trabajadas</h1>
+    <p class="subtitle">{{ nombre_mes }} {{ año }} — Sin coste</p>
+    <a href="{{ url_for('informe_horas_mensual_excel', mes=mes, anio=año) }}" class="btn btn-primary">Descargar Excel</a>
+    {% if es_admin and desde_informe %}
+    <a href="{{ url_for('informe') }}" class="btn btn-secondary">Volver a Informes</a>
+    {% else %}
+    <a href="{{ url_for('horas_semana') }}" class="btn btn-secondary">Volver</a>
+    {% endif %}
+</div>
+
+<form method="get" class="form-inline" style="margin-bottom: 1rem;" id="form-mes-anio">
+    <label for="mes">Mes:</label>
+    <select name="mes" id="mes">
+        {% for m in range(1, 13) %}
+        <option value="{{ m }}" {{ 'selected' if m == mes else '' }}>{{ ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][m-1] }}</option>
+        {% endfor %}
+    </select>
+    <label for="anio">Año:</label>
+    <input type="number" name="anio" id="anio" value="{{ año }}" min="2020" max="2030" style="width: 5rem;">
+    <button type="submit" class="btn btn-secondary">Ver</button>
+</form>
+<script>
+document.getElementById('form-mes-anio').onsubmit = function(e) {
+    e.preventDefault();
+    var m = document.getElementById('mes').value;
+    var a = document.getElementById('anio').value;
+    window.location.href = '/informes/horas-mensual/' + m + '/' + a;
+};
+</script>
+
+<p class="info-box">
+    Horas trabajadas en el mes y acumulado del año. Solo se muestran horas; no se incluye ningún dato de coste.
+</p>
+
+{% for tid, dat in por_trabajador.items() %}
+<div class="informe-trabajador">
+    <h2>{{ dat.nombre }}</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                <th>Tarea</th>
+                <th>Horas</th>
+                <th>Observaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lin in dat.lineas %}
+            <tr>
+                <td>{{ lin.cliente }}</td>
+                <td>{{ lin.tarea }}</td>
+                <td>{{ "%.2f"|format(lin.horas) }}h</td>
+                <td>
+                    {% if lin.observaciones %}
+                        <ul style="margin: 0; padding-left: 20px; font-size: 0.9em;">
+                            {% for obs in lin.observaciones %}
+                            <li>{{ obs }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <span style="color: #999;">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="totales">
+                <td colspan="2"><strong>Horas del mes ({{ dat.nombre }})</strong></td>
+                <td><strong>{{ "%.2f"|format(dat.total) }}h</strong></td>
+                <td></td>
+            </tr>
+            <tr class="totales">
+                <td colspan="2"><strong>Acumulado año {{ año }} (ene–{{ nombre_mes }})</strong></td>
+                <td><strong>{{ "%.2f"|format(dat.acumulado_anio) }}h</strong></td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+{% else %}
+<p class="text-center">No hay horas registradas en este período.</p>
+{% endfor %}
+
+{% if por_trabajador %}
+<p class="form-actions" style="margin-top: 1rem;">
+    <strong>TOTAL HORAS DEL MES: {{ "%.2f"|format(total_general) }}h</strong><br>
+    <strong>TOTAL ACUMULADO AÑO {{ año }}: {{ "%.2f"|format(total_acumulado_anio) }}h</strong>
+</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Tareas{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Gestión de Tareas</h1>
+    <a href="{{ url_for('tarea_nuevo') }}" class="btn btn-primary">Nueva Tarea</a>
+    <a href="{{ url_for('tareas_importar') }}" class="btn btn-secondary">Importar desde Excel</a>
+</div>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Categoría</th>
+            <th>Incluida en Cuotas</th>
+            <th>Facturación</th>
+            <th>Límite</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for tarea in tareas %}
+        <tr>
+            <td>{{ tarea.id }}</td>
+            <td>{{ tarea.nombre }}</td>
+            <td>{{ tarea.tipo_tarea }}</td>
+            <td>{{ tarea.categoria if tarea.categoria else '-' }}</td>
+            <td>
+                {% if tarea.incluida_cuota_basica or tarea.incluida_cuota_estandar or tarea.incluida_cuota_premium %}
+                    {% if tarea.incluida_cuota_basica %}Básico{% endif %}
+                    {% if tarea.incluida_cuota_estandar %}{% if tarea.incluida_cuota_basica %}, {% endif %}Plus{% endif %}
+                    {% if tarea.incluida_cuota_premium %}{% if tarea.incluida_cuota_basica or tarea.incluida_cuota_estandar %}, {% endif %}Premium{% endif %}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if tarea.siempre_facturable %}
+                    Siempre facturable
+                {% elif tarea.tarifa_manual %}
+                    Manual
+                {% elif tarea.precio_fijo_fuera_cuota %}
+                    {{ "%.2f"|format(tarea.precio_fijo_fuera_cuota) }} €{% if tarea.tarifa_hora_fuera_cuota %}/h{% endif %}
+                {% elif tarea.precio_hora %}
+                    {{ "%.2f"|format(tarea.precio_hora) }} €/h
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if tarea.tipo_limite != 'NINGUNO' %}
+                    {{ tarea.tipo_limite }}: {{ tarea.valor_limite }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td class="actions">
+                <a href="{{ url_for('tarea_editar', id=tarea.id) }}" class="btn btn-small btn-secondary">Editar</a>
+                <form method="POST" action="{{ url_for('tarea_eliminar', id=tarea.id) }}" style="display:inline;" 
+                      onsubmit="return confirm('¿Está seguro de eliminar esta tarea?{% if tarea.num_registros_horas > 0 %}\n\nADVERTENCIA: Esta tarea tiene {{ tarea.num_registros_horas }} registro(s) de horas asociado(s) que también se eliminarán.{% endif %}');">
+                    <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="8" class="text-center">No hay tareas registradas</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

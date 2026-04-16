@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Registro de Horas{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Registro de Horas</h1>
+    <a href="{{ url_for('horas_semana') }}" class="btn btn-primary">Registro semanal (recomendado)</a>
+    <a href="{{ url_for('hora_nuevo') }}" class="btn btn-secondary">Registro único (fecha y horas)</a>
+</div>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            {% if session.rol == 'ADMIN' %}<th>Trabajador</th>{% endif %}
+            <th>Cliente</th>
+            <th>Tarea</th>
+            <th>Fecha</th>
+            <th>Horas</th>
+            {% if session.rol == 'ADMIN' %}
+            <th>Coste Total</th>
+            <th>Clasificación</th>
+            <th>Importe Facturable</th>
+            {% endif %}
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for hora in horas %}
+        <tr>
+            {% if session.rol == 'ADMIN' %}<td>{{ hora.trabajador.nombre }}</td>{% endif %}
+            <td>{{ hora.cliente.nombre }}</td>
+            <td>{{ hora.tarea.nombre }}</td>
+            <td>{{ hora.fecha.strftime('%d/%m/%Y') }}</td>
+            <td>{{ "%.2f"|format(hora.horas) }}</td>
+            {% if session.rol == 'ADMIN' %}
+            <td>{{ "%.2f"|format(hora.coste_total) }} €</td>
+            <td>
+                {% if hora.clasificacion_facturacion %}
+                    {% if hora.clasificacion_facturacion == 'INCLUIDA_EN_CUOTA' %}
+                        <span style="color: green;">Incluida en Cuota</span>
+                    {% elif hora.clasificacion_facturacion == 'FACTURABLE' %}
+                        <span style="color: orange;">Facturable</span>
+                    {% elif hora.clasificacion_facturacion == 'TARIFA_MANUAL' %}
+                        <span style="color: blue;">Tarifa Manual</span>
+                    {% elif hora.clasificacion_facturacion == 'NO_FACTURABLE' %}
+                        <span style="color: gray;">No Facturable</span>
+                    {% elif hora.clasificacion_facturacion == 'LIMITE_SUPERADO' %}
+                        <span style="color: red;">Límite Superado</span>
+                    {% else %}
+                        {{ hora.clasificacion_facturacion }}
+                    {% endif %}
+                {% else %}
+                    <span style="color: gray;">-</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if hora.importe_facturable %}
+                    {{ "%.2f"|format(hora.importe_facturable) }} €
+                {% elif hora.importe_manual %}
+                    {{ "%.2f"|format(hora.importe_manual) }} € (manual)
+                {% elif hora.importe_facturar %}
+                    {{ "%.2f"|format(hora.importe_facturar) }} €
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            {% endif %}
+            <td class="actions">
+                <a href="{{ url_for('hora_editar', id=hora.id) }}" class="btn btn-small btn-secondary">Editar</a>
+                <form method="POST" action="{{ url_for('hora_eliminar', id=hora.id) }}" style="display:inline;" onsubmit="return confirm('¿Está seguro de eliminar este registro?');">
+                    <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="{{ 6 if session.rol == 'ADMIN' else 6 }}" class="text-center">No hay horas registradas</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Control Horario{% endblock %}
+
+{% block content %}
+{% if nivel == 3 and alertas %}
+<div id="modal-alertas" class="modal-alertas-overlay">
+    <div class="modal-alertas-box">
+        <h3>⚠️ Alertas de Control Horario</h3>
+        <p>Tienes {{ alertas|length }} alerta(s) pendiente(s):</p>
+        <ul>
+            {% for a in alertas %}
+            <li>{% if a.tipo == 'critica' %}🔴{% else %}🟡{% endif %} {{ a.nombre }}: {{ "%.1f"|format(a.horas) }}h{% if a.tipo == 'critica' %} (Supera límite){% else %} (Cerca del límite){% endif %}</li>
+            {% endfor %}
+        </ul>
+        <p><a href="#alertas-box" class="btn btn-primary" id="btn-ver-alertas">Ver Control Horario</a> <button type="button" class="btn btn-secondary" id="btn-cerrar-alertas">Cerrar</button></p>
+    </div>
+</div>
+{% endif %}
+
+<div class="page-header">
+    <h1>
+        {% if nivel == 1 %}⏰ Mi Control Horario{% endif %}
+        {% if nivel == 2 %}⏰ Control Horario - Todos los Trabajadores{% endif %}
+        {% if nivel == 3 %}⏰ Control Horario - Panel de Administración{% endif %}
+    </h1>
+</div>
+
+{# Estado actual (solo si el usuario tiene trabajador y puede fichar) #}
+{% if session.trabajador_id %}
+<section class="control-horario-box">
+    <h2>{% if nivel == 1 %}Estado actual{% else %}Mi estado{% endif %}</h2>
+    {% if fichaje_activo %}
+    <p class="estado-fichado">🟢 Trabajando</p>
+    <p>Entrada: {{ fichaje_activo.hora_entrada.strftime('%H:%M:%S') }}</p>
+    <p>Tiempo transcurrido: <strong id="tiempo-transcurrido">--</strong></p>
+    <form method="post" action="{{ url_for('control_horario_fichar') }}" style="display:inline;">
+        <button type="submit" class="btn btn-danger">🔴 Fichar Salida</button>
+    </form>
+    {% else %}
+    <p class="estado-libre">⚪ Libre</p>
+    <form method="post" action="{{ url_for('control_horario_fichar') }}" style="display:inline;">
+        <button type="submit" class="btn btn-success">🟢 Fichar Entrada</button>
+    </form>
+    {% endif %}
+</section>
+{% else %}
+<p class="alert alert-info">No tienes un trabajador asociado; el fichaje no está disponible.</p>
+{% endif %}
+
+{# Nivel 1: Fichajes de hoy + Mis estadísticas (semana, mes, año) #}
+{% if nivel == 1 and session.trabajador_id %}
+<section class="control-horario-box">
+    <h2>📅 Fichajes de hoy ({{ now.strftime('%d/%m/%Y') }})</h2>
+    {% if fichajes_hoy %}
+    <table class="table table-bordered">
+        <thead>
+            <tr><th>Entrada</th><th>Salida</th><th>Duración</th></tr>
+        </thead>
+        <tbody>
+            {% for f in fichajes_hoy %}
+            <tr>
+                <td>{{ f.hora_entrada.strftime('%H:%M:%S') }}</td>
+                <td>{% if f.hora_salida %}{{ f.hora_salida.strftime('%H:%M:%S') }}{% else %}En curso...{% endif %}</td>
+                <td>{% if f.horas_trabajadas is not none %}{{ f.horas_trabajadas|float|round(2) }}h{% else %}<span id="dur-en-curso">--</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p><strong>Total del día: {{ "%.2f"|format(total_hoy)|replace(".", ",") }}h</strong></p>
+    {% else %}
+    <p>Sin fichajes hoy.</p>
+    {% endif %}
+</section>
+
+<section class="control-horario-box">
+    <h2>📊 Mis estadísticas</h2>
+    <table class="table table-simple">
+        <tr><td>Horas semana actual:</td><td><strong>{{ "%.1f"|format(horas_semana) }}h</strong></td></tr>
+        <tr><td>Horas mes actual:</td><td><strong>{{ "%.1f"|format(horas_mes) }}h</strong></td></tr>
+        <tr><td>Horas año {{ now.year }}:</td><td><strong>{{ "%.1f"|format(horas_anio) }}h</strong></td></tr>
+    </table>
+    <p>Límite anual: {{ limite_anual }}h</p>
+    {% set _horas_anio_f = horas_anio|float %}
+    {% set _pct = (_horas_anio_f / limite_anual * 100) if limite_anual else 0 %}
+    <p>Restantes: {{ "%.1f"|format(limite_anual - _horas_anio_f) }}h ({{ "%.1f"|format(100 - _pct) }}%)</p>
+</section>
+{% endif %}
+
+{# Nivel 2: Resumen semanal de todos (solo semana) #}
+{% if nivel == 2 %}
+<section class="control-horario-box">
+    <h2>📊 Resumen semanal - Todos los trabajadores</h2>
+    <table class="table table-bordered">
+        <thead>
+            <tr><th>Trabajador</th><th>Estado</th><th>Hoy</th><th>Semana actual</th></tr>
+        </thead>
+        <tbody>
+            {% for r in resumen_todos %}
+            <tr>
+                <td>{{ r.nombre }}</td>
+                <td>{% if r.estado_fichado %}🟢 Fichado{% else %}⚪ Libre{% endif %}</td>
+                <td>{{ "%.1f"|format(r.hoy) }}h</td>
+                <td>{{ "%.1f"|format(r.semana) }}h</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="text-muted">Solo puedes ver horas semanales. Para datos mensuales y anuales contacta con Administración.</p>
+</section>
+{% endif %}
+
+{# Nivel 3: Alertas + Resumen completo (semana, mes, año) #}
+{% if nivel == 3 %}
+{% if alertas %}
+<section id="alertas-box" class="control-horario-box alertas-box">
+    <h2>⚠️ Alertas activas</h2>
+    <ul class="alertas-lista">
+        {% for a in alertas %}
+        <li class="{% if a.tipo == 'critica' %}alerta-critica{% else %}alerta-preventiva{% endif %}">
+            {% if a.tipo == 'critica' %}🔴{% else %}🟡{% endif %}
+            {{ a.nombre }}: {{ "%.1f"|format(a.horas) }}h
+            {% if a.tipo == 'critica' %}(supera límite {{ limite_anual }}h){% else %}(cerca del límite){% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}
+
+<section class="control-horario-box">
+    <h2>📊 Resumen completo - Todos los trabajadores</h2>
+    <table class="table table-bordered">
+        <thead>
+            <tr><th>Trabajador</th><th>Estado</th><th>Hoy</th><th>Semana</th><th>Mes</th><th>Año</th><th>% Anual</th></tr>
+        </thead>
+        <tbody>
+            {% for r in resumen_todos %}
+            {% set pct_anio = (r.anio|float / limite_anual * 100) if r.anio is not none and limite_anual else 0 %}
+            <tr>
+                <td>{{ r.nombre }}</td>
+                <td>{% if r.estado_fichado %}🟢{% else %}⚪{% endif %}</td>
+                <td>{{ "%.1f"|format(r.hoy) }}h</td>
+                <td>{{ "%.1f"|format(r.semana) }}h</td>
+                <td>{{ "%.1f"|format(r.mes) if r.mes is not none else '-' }}h</td>
+                <td>{{ "%.1f"|format(r.anio) if r.anio is not none else '-' }}h</td>
+                <td>
+                    {% if r.anio is not none %}
+                    {{ "%.1f"|format(pct_anio) }}%
+                    {% if pct_anio > 100 %}🔴{% elif pct_anio >= 90 %}🟡{% else %}🟢{% endif %}
+                    {% else %}-{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="text-muted">🟢 &lt;90% | 🟡 90-100% | 🔴 &gt;100%</p>
+</section>
+
+{# Solo admin: modificar estado de fichajes (así cambia la columna Estado en el informe Excel) #}
+<section class="control-horario-box">
+    <h2>✏️ Modificar estado en informes</h2>
+    <p class="text-muted">El informe Excel usa el estado guardado de cada día. Aquí puedes cambiar un fichaje a <strong>Aprobado</strong> o <strong>Pendiente</strong>; el próximo informe reflejará el cambio.</p>
+    {% if fichajes_editar_estado %}
+    <table class="table table-bordered">
+        <thead>
+            <tr><th>Fecha</th><th>Trabajador</th><th>Entrada</th><th>Salida</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for f in fichajes_editar_estado %}
+            <tr>
+                <td>{{ f.fecha.strftime('%d/%m/%Y') }}</td>
+                <td>{{ f.trabajador.nombre if f.trabajador else '-' }}</td>
+                <td>{{ f.hora_entrada.strftime('%H:%M') if f.hora_entrada else '-' }}</td>
+                <td>{{ f.hora_salida.strftime('%H:%M') if f.hora_salida else '-' }}</td>
+                <td>
+                    <form method="post" action="{{ url_for('control_horario_cambiar_estado') }}" style="display:inline;">
+                        <input type="hidden" name="fichaje_id" value="{{ f.id }}">
+                        <select name="estado">
+                            <option value="Pendiente" {{ 'selected' if f.estado == 'Pendiente' else '' }}>Pendiente</option>
+                            <option value="Aprobado" {{ 'selected' if f.estado == 'Aprobado' else '' }}>Aprobado</option>
+                        </select>
+                        <button type="submit" class="btn btn-small">Guardar</button>
+                    </form>
+                </td>
+                <td></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No hay fichajes cerrados recientes para editar.</p>
+    {% endif %}
+</section>
+{% endif %}
+
+{# Descargar informe #}
+<section class="control-horario-box">
+    <h2>📥 Descargar informe</h2>
+    <form method="get" action="{{ url_for('control_horario_informe_excel') }}" class="form-inline">
+        {% if nivel >= 2 %}
+        <label for="trabajador_id">Trabajador:</label>
+        <select name="trabajador_id" id="trabajador_id">
+            {% for t in trabajadores_lista %}
+            <option value="{{ t.id }}" {% if session.trabajador_id == t.id %}selected{% endif %}>{{ t.nombre }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+        <label for="desde">Desde:</label>
+        <input type="date" id="desde" name="desde" value="{{ lunes.strftime('%Y-%m-%d') }}">
+        <label for="hasta">Hasta:</label>
+        <input type="date" id="hasta" name="hasta" value="{{ domingo.strftime('%Y-%m-%d') }}">
+        <button type="submit" class="btn btn-primary">📥 Generar informe Excel</button>
+    </form>
+</section>
+
+<style>
+.control-horario-box { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; }
+.control-horario-box h2 { margin-top: 0; font-size: 1.1rem; }
+.estado-fichado { color: #2e7d32; font-weight: bold; }
+.estado-libre { color: #666; }
+.table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; }
+.table th, .table td { padding: 8px; text-align: left; border: 1px solid #ddd; }
+.table-bordered th, .table-bordered td { border: 1px solid #ddd; }
+.table th { background: #f5f5f5; }
+.table-simple { border-collapse: collapse; }
+.table-simple td { padding: 4px 12px 4px 0; }
+.alertas-lista { list-style: none; padding-left: 0; }
+.alerta-critica { color: #c62828; }
+.alerta-preventiva { color: #f9a825; }
+.text-muted { color: #666; font-size: 0.9rem; }
+.modal-alertas-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.modal-alertas-box { background: #fff; padding: 1.5rem; border-radius: 8px; max-width: 420px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+.modal-alertas-box ul { padding-left: 1.2rem; }
+.modal-alertas-box .btn { margin-right: 8px; }
+.btn-fichaje { background: #2e7d32; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+.btn-fichaje:hover { background: #1b5e20; }
+.nav-tiempo-fichaje { margin-left: 8px; font-weight: bold; }
+</style>
+
+<script>
+(function() {
+    // Cerrar modal de alertas
+    var btnCerrar = document.getElementById('btn-cerrar-alertas');
+    var btnVer = document.getElementById('btn-ver-alertas');
+    var modal = document.getElementById('modal-alertas');
+    if (modal) {
+        if (btnCerrar) btnCerrar.addEventListener('click', function() { modal.style.display = 'none'; });
+        if (btnVer) btnVer.addEventListener('click', function() { modal.style.display = 'none'; });
+    }
+    // Actualizar contador en tiempo real si hay fichaje activo
+    function actualizarContador() {
+        fetch('{{ url_for("control_horario_estado") }}')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.fichado && data.tiempo) {
+                    var el = document.getElementById('tiempo-transcurrido');
+                    if (el) el.textContent = data.tiempo;
+                }
+            });
+    }
+    if (document.getElementById('tiempo-transcurrido')) {
+        actualizarContador();
+        setInterval(actualizarContador, 1000);
+    }
+})();
+</script>
+{% endblock %}

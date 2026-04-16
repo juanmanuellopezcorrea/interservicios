@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Cuestionario normativo — {{ cliente.nombre }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-1">Cuestionario normativo (SI/NO/PTE)</h1>
+      <div class="text-muted">{{ cliente.nombre }} · Pendientes: <span class="fw-semibold">{{ pendientes_total }}</span></div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-outline-secondary" href="{{ url_for('clientes') }}">Clientes</a>
+      <a class="btn btn-outline-secondary" href="{{ url_for('cliente_editar', id=cliente.id) }}">Editar cliente</a>
+    </div>
+  </div>
+
+  <form method="post" class="card shadow-sm">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th style="min-width:280px;">Campo / Obligación</th>
+              <th>Descripción</th>
+              <th class="text-center" style="width:70px;">SI</th>
+              <th class="text-center" style="width:70px;">NO</th>
+              <th class="text-center" style="width:70px;">PTE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in cuestionario %}
+              {% set iid = row.id %}
+              {% set val = respuestas.get(iid, '') %}
+              <tr>
+                <td class="fw-semibold">{{ row.campo }}</td>
+                <td class="text-muted">{{ row.descripcion }}</td>
+                <td class="text-center">
+                  <input type="radio" name="r__{{ iid }}" value="SI" {% if val=='SI' %}checked{% endif %}>
+                </td>
+                <td class="text-center">
+                  <input type="radio" name="r__{{ iid }}" value="NO" {% if val=='NO' %}checked{% endif %}>
+                </td>
+                <td class="text-center">
+                  <input type="radio" name="r__{{ iid }}" value="PTE" {% if val=='PTE' or val=='' %}checked{% endif %}>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <button class="btn btn-primary" type="submit">Guardar</button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Informe final de horas - {{ nombre_mes }} {{ año }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Informe final de horas</h1>
+    <p class="subtitle">{{ nombre_mes }} {{ año }}</p>
+    <a href="{{ url_for('informe_horas_final_excel', mes=mes, anio=año) }}" class="btn btn-primary">Descargar Excel</a>
+    <a href="{{ url_for('informe') }}" class="btn btn-secondary">Volver a Informes</a>
+</div>
+
+<p class="info-box">
+    <strong>Columnas:</strong> Cliente | Horas por trabajador (una columna por cada uno) | Coste (suma de horas × coste_hora del trabajador para ese cliente).
+</p>
+
+<div class="table-responsive">
+    <table class="data-table informe-horas-final">
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                {% for t in trabajadores %}
+                <th>{{ t.nombre }}</th>
+                {% endfor %}
+                <th>COSTE</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fila in filas %}
+            <tr>
+                <td>{{ fila.cliente.nombre }}</td>
+                {% for t in trabajadores %}
+                <td>{{ "%.1f"|format(fila.horas_por_trabajador.get(t.nombre, 0)) }}h</td>
+                {% endfor %}
+                <td><strong>{{ "%.2f"|format(fila.coste) }} €</strong></td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="{{ trabajadores|length + 2 }}" class="text-center">No hay registros en este período</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if filas %}
+        <tfoot>
+            <tr class="totales">
+                <td><strong>TOTALES</strong></td>
+                {% for t in trabajadores %}
+                <td><strong>{{ "%.1f"|format(totales_horas.get(t.nombre, 0)) }}h</strong></td>
+                {% endfor %}
+                <td><strong>{{ "%.2f"|format(total_coste) }} €</strong></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+{% if filas %}
+<p class="form-hint">
+    Coste = suma de (horas dedicadas al cliente × coste_hora) de cada trabajador.
+</p>
+{% endif %}
+{% endblock %}

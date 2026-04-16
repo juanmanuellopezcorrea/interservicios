@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if registro else 'Nuevo' }} Registro de Horas{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>{{ 'Editar' if registro else 'Nuevo' }} Registro de Horas</h1>
+    
+    <form method="POST" class="form">
+        {% if session.rol == 'ADMIN' %}
+        <div class="form-group">
+            <label for="trabajador_id">Trabajador:</label>
+            <select id="trabajador_id" name="trabajador_id" required>
+                {% for trabajador in trabajadores %}
+                <option value="{{ trabajador.id }}" {{ 'selected' if registro and registro.trabajador_id == trabajador.id else '' }}>{{ trabajador.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        
+        <div class="form-group">
+            <label for="cliente_id">Cliente:</label>
+            <select id="cliente_id" name="cliente_id" required>
+                {% for cliente in clientes %}
+                <option value="{{ cliente.id }}" {{ 'selected' if registro and registro.cliente_id == cliente.id else '' }}>{{ cliente.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="tarea_id">Tarea:</label>
+            <select id="tarea_id" name="tarea_id" required>
+                {% for tarea in tareas %}
+                <option value="{{ tarea.id }}" {{ 'selected' if registro and registro.tarea_id == tarea.id else '' }}>{{ tarea.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="fecha">Fecha:</label>
+            <input type="date" id="fecha" name="fecha" value="{{ registro.fecha.strftime('%Y-%m-%d') if registro else '' }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="horas">Horas:</label>
+            <input type="number" id="horas" name="horas" step="0.01" min="0" value="{{ "%.2f"|format(registro.horas) if registro else '' }}" required>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a href="{{ url_for('horas') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

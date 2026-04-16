@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Importar tareas{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Importar tareas desde Excel</h1>
+    <a href="{{ url_for('tareas') }}" class="btn btn-secondary">Volver a Tareas</a>
+</div>
+
+<p>Usa el archivo <b>Tabla_Maestra_Tareas_Interservicios.xlsx</b>.</p>
+<p>El Excel debe tener una hoja <b>Tabla Maestra Tareas</b> con columnas: <b>Nombre de la tarea</b>, <b>Incluida en cuota</b> (Sí/No), y opcionalmente <b>Facturación</b> (precio por hora para tareas no incluidas).</p>
+<p>Las tareas que ya existan por nombre se omitirán.</p>
+
+<form method="post" enctype="multipart/form-data" style="margin-top:1rem;">
+    <input type="file" name="archivo" accept=".xlsx" required>
+    <button type="submit" class="btn btn-primary">Importar</button>
+</form>
+{% endblock %}

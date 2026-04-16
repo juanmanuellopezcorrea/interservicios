@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Presupuesto #{{ sol.id }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="h3 mb-1">Solicitud #{{ sol.id }}</h1>
+      <div class="text-muted">
+        <span class="badge text-bg-{{ sol.get_estado_badge() }}">{{ sol.get_estado_display() }}</span>
+      </div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('compliance.dashboard_presupuestos') }}">Volver</a>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="mb-2"><span class="text-muted">Cliente:</span> <span class="fw-semibold">{{ sol.cliente.nombre if sol.cliente else sol.cliente_id }}</span></div>
+          <div class="mb-2"><span class="text-muted">Obligación:</span> <span class="fw-semibold">{{ sol.catalogo.nombre if sol.catalogo else sol.catalogo_id }}</span></div>
+          <div class="mb-2"><span class="text-muted">Fecha solicitud:</span> {{ sol.fecha_solicitud.strftime('%d/%m/%Y %H:%M') if sol.fecha_solicitud else '' }}</div>
+          {% if sol.notas_internas %}
+            <div class="mt-3">
+              <div class="text-muted">Notas internas</div>
+              <div class="border rounded p-2">{{ sol.notas_internas }}</div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <div class="fw-semibold mb-2">Cambiar estado</div>
+          <form method="post">
+            <input type="hidden" name="accion" value="cambiar_estado">
+            <div class="input-group">
+              <select class="form-select" name="nuevo_estado">
+                {% for e in ['solicitado','en_preparacion','enviado','aceptado','rechazado','cerrado'] %}
+                  <option value="{{ e }}" {% if sol.estado==e %}selected{% endif %}>{{ e }}</option>
+                {% endfor %}
+              </select>
+              <button class="btn btn-primary" type="submit">Guardar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <div class="fw-semibold mb-2">Importe propuesto</div>
+          <form method="post">
+            <input type="hidden" name="accion" value="registrar_importe">
+            <div class="mb-2">
+              <input class="form-control" name="importe_propuesto" value="{{ sol.importe_propuesto or '' }}" placeholder="Ej: 350">
+            </div>
+            <div class="mb-2">
+              <textarea class="form-control" name="notas_internas" rows="3" placeholder="Notas internas">{{ sol.notas_internas or '' }}</textarea>
+            </div>
+            <button class="btn btn-outline-primary" type="submit">Guardar importe</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="fw-semibold mb-2">Enviar al cliente</div>
+          <form method="post">
+            <input type="hidden" name="accion" value="enviar_cliente">
+            <button class="btn btn-success" type="submit">Enviar email</button>
+            <div class="text-muted small mt-2">Usa la configuración de correo (Flask-Mail).</div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

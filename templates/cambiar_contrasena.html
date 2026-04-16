@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Cambiar contraseña{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h1>Cambiar contraseña</h1>
+    
+    <form method="POST" class="form">
+        <div class="form-group">
+            <label for="password_actual">Contraseña actual *</label>
+            <input type="password" id="password_actual" name="password_actual" required placeholder="••••••••">
+        </div>
+
+        <div class="form-group">
+            <label for="password_nueva">Nueva contraseña *</label>
+            <input type="password" id="password_nueva" name="password_nueva" minlength="6" required placeholder="••••••••">
+            <small class="form-text">Mínimo 6 caracteres.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="password_confirmar">Confirmar nueva contraseña *</label>
+            <input type="password" id="password_confirmar" name="password_confirmar" minlength="6" required placeholder="••••••••">
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Cambiar contraseña</button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

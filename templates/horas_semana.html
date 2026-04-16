@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Registro de horas semanal{% endblock %}
+
+{% block content %}
+<div class="page-header horas-semana-header">
+    <div class="horas-semana-titulo">
+        <h1>Detalle de horas (<span id="resumen-hoy">{{ "%.2f"|format(horas_hoy)|replace(".", ",") }}h</span> / <span id="resumen-semana">{{ "%.2f"|format(horas_semana_total)|replace(".", ",") }}h</span>)</h1>
+        <a href="{{ url_for('horas') }}" class="btn btn-secondary">Ver semana</a>
+    </div>
+    <form method="get" action="{{ url_for('horas_semana') }}" id="formCargar" class="form-inline horas-semana-nav">
+        <label for="semana_sel">Semana:</label>
+        <input type="date" id="semana_sel" name="semana" value="{{ lunes_str }}" style="padding: 6px 8px;">
+        <button type="submit" class="btn btn-primary">Ir</button>
+    </form>
+</div>
+
+<form method="POST" action="{{ url_for('horas_semana_guardar') }}" class="form" id="formSemana">
+    <input type="hidden" name="semana" value="{{ lunes_str }}">
+    <div class="form-group horas-semana-filtros">
+        <label for="tarea_id">Tarea:</label>
+        <select id="tarea_id" name="tarea_id" required>
+            <option value="">Seleccionar tarea...</option>
+            {% for t in tareas %}
+            <option value="{{ t.id }}" {{ 'selected' if tarea_id_param and tarea_id_param == t.id else '' }}>{{ t.nombre }}</option>
+            {% endfor %}
+        </select>
+        <button type="button" class="btn btn-small btn-outline" id="btnTodasTarea">Todas</button>
+        <label for="cliente_id">Cliente:</label>
+        <select id="cliente_id" name="cliente_id" required>
+            <option value="">Seleccionar cliente...</option>
+            {% for c in clientes %}
+            <option value="{{ c.id }}" {{ 'selected' if cliente_id_param and cliente_id_param == c.id else '' }}>{{ c.nombre }}</option>
+            {% endfor %}
+        </select>
+        <button type="button" class="btn btn-small btn-outline" id="btnTodasCliente">Todas</button>
+    </div>
+
+    {% if session.rol == 'ADMIN' %}
+    <div class="form-group">
+        <label for="trabajador_id">Trabajador:</label>
+        <select id="trabajador_id" name="trabajador_id" required>
+            {% for t in trabajadores %}
+            <option value="{{ t.id }}" {{ 'selected' if session.trabajador_id == t.id else '' }}>{{ t.nombre }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endif %}
+
+    <div class="horas-semana-container">
+        <h3>HORAS DÍAS LABORABLES (FORMATO HH:MM)</h3>
+        {% for i in range(5) %}
+        <div class="horas-dia-completo">
+            <div class="horas-dia-left">
+                <label class="horas-dia-label">{{ dias_semana[i] }}, {{ fechas_str[i] }}</label>
+                <input type="hidden" name="fecha_{{ i }}" value="{{ fechas_str[i] }}" class="fecha-input" data-dia="{{ i }}">
+                <div class="horas-dia-inputs">
+                    <input type="text" id="h_{{ i }}" name="horas_{{ i }}" class="input-hhmm" placeholder="0:00" maxlength="6" data-dia="{{ i }}" value="{{ horas_prefill[i] }}">
+                    <div class="horas-botones">
+                        <button type="button" class="btn-rapido btn-5m" data-min="5" data-dia="{{ i }}">5 m</button>
+                        <button type="button" class="btn-rapido btn-10m" data-min="10" data-dia="{{ i }}">10 m</button>
+                        <button type="button" class="btn-rapido btn-15m" data-min="15" data-dia="{{ i }}">15 m</button>
+                        <button type="button" class="btn-rapido btn-30m" data-min="30" data-dia="{{ i }}">30 m</button>
+                        <button type="button" class="btn-rapido btn-1h" data-min="60" data-dia="{{ i }}">1 h</button>
+                        <button type="button" class="btn-rapido btn-2h" data-min="120" data-dia="{{ i }}">2 h</button>
+                    </div>
+                </div>
+            </div>
+            <div class="horas-dia-right">
+                <textarea name="obs_{{ i }}" id="obs_{{ i }}" rows="2" placeholder="Observaciones..." class="obs-input" data-dia="{{ i }}">{{ obs_prefill[i] }}</textarea>
+                <button type="button" class="btn-guardar-dia" data-dia="{{ i }}" data-fecha="{{ fechas_str[i] }}">💾 Guardar</button>
+            </div>
+        </div>
+        {% endfor %}
+        <h3>HORAS FIN DE SEMANA (FORMATO HH:MM)</h3>
+        {% for i in range(5, 7) %}
+        <div class="horas-dia-completo">
+            <div class="horas-dia-left">
+                <label class="horas-dia-label">{{ dias_semana[i] }}, {{ fechas_str[i] }}</label>
+                <input type="hidden" name="fecha_{{ i }}" value="{{ fechas_str[i] }}" class="fecha-input" data-dia="{{ i }}">
+                <div class="horas-dia-inputs">
+                    <input type="text" id="h_{{ i }}" name="horas_{{ i }}" class="input-hhmm" placeholder="0:00" maxlength="6" data-dia="{{ i }}" value="{{ horas_prefill[i] }}">
+                    <div class="horas-botones">
+                        <button type="button" class="btn-rapido btn-5m" data-min="5" data-dia="{{ i }}">5 m</button>
+                        <button type="button" class="btn-rapido btn-10m" data-min="10" data-dia="{{ i }}">10 m</button>
+                        <button type="button" class="btn-rapido btn-15m" data-min="15" data-dia="{{ i }}">15 m</button>
+                        <button type="button" class="btn-rapido btn-30m" data-min="30" data-dia="{{ i }}">30 m</button>
+                        <button type="button" class="btn-rapido btn-1h" data-min="60" data-dia="{{ i }}">1 h</button>
+                        <button type="button" class="btn-rapido btn-2h" data-min="120" data-dia="{{ i }}">2 h</button>
+                    </div>
+                </div>
+            </div>
+            <div class="horas-dia-right">
+                <textarea name="obs_{{ i }}" id="obs_{{ i }}" rows="2" placeholder="Observaciones..." class="obs-input" data-dia="{{ i }}">{{ obs_prefill[i] }}</textarea>
+                <button type="button" class="btn-guardar-dia" data-dia="{{ i }}" data-fecha="{{ fechas_str[i] }}">💾 Guardar</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <p class="form-hint">La semana se carga automáticamente. Use los botones rápidos para sumar tiempo o escriba en formato HH:MM (ej. 1:30). Objetivo: 30-40h/semana. Puede guardar cada día individualmente con el botón "💾 Guardar" de cada fila, o guardar toda la semana con el botón inferior.</p>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Guardar toda la semana</button>
+        <a href="{{ url_for('horas') }}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+
+<style>
+.horas-semana-header { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; justify-content: space-between; }
+.horas-semana-titulo { display: flex; align-items: center; gap: 1rem; }
+.horas-semana-titulo h1 { margin: 0; font-size: 1.25rem; }
+#resumen-hoy { font-weight: bold; color: #2c3e50; }
+.horas-semana-nav { display: flex; align-items: center; gap: 0.5rem; }
+.horas-semana-filtros { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+.horas-semana-filtros select { min-width: 200px; padding: 6px 8px; }
+.horas-semana-filtros .btn-small { padding: 4px 12px; font-size: 0.85rem; }
+.horas-semana-container { margin: 1.5rem 0; }
+.horas-semana-container h3 { margin: 1.5rem 0 0.75rem; font-size: 0.95rem; color: #555; }
+.horas-dia-completo { display: flex; gap: 1rem; margin-bottom: 1rem; padding: 0.75rem; border: 1px solid #e0e0e0; border-radius: 6px; align-items: flex-start; }
+.horas-dia-left { flex: 1; display: flex; align-items: flex-start; gap: 1rem; }
+.horas-dia-right { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
+.horas-dia-label { min-width: 160px; font-weight: 500; padding-top: 6px; }
+.horas-dia-inputs { display: flex; flex-direction: column; gap: 6px; }
+.input-hhmm { width: 72px; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; }
+.horas-botones { display: flex; flex-wrap: wrap; gap: 6px; }
+.btn-rapido { padding: 5px 10px; font-size: 0.8rem; border: none; border-radius: 20px; color: white; cursor: pointer; }
+.btn-rapido:hover { opacity: 0.9; }
+.btn-5m { background: #28a745; }
+.btn-10m { background: #17a2b8; }
+.btn-15m { background: #007bff; }
+.btn-30m { background: #0056b3; }
+.btn-1h { background: #6610f2; }
+.btn-2h { background: #520dc2; }
+.obs-input { width: 100%; min-height: 44px; resize: vertical; border: 1px solid #ccc; border-radius: 4px; padding: 6px; }
+.btn-guardar-dia { background: #28a745; color: white; padding: 6px 16px; border-radius: 5px; font-size: 14px; border: none; cursor: pointer; align-self: flex-end; margin-top: 4px; white-space: nowrap; }
+.btn-guardar-dia:hover { background: #218838; }
+.btn-guardar-dia:disabled { background: #6c757d; cursor: not-allowed; }
+@media (max-width: 900px) { .horas-dia-completo { flex-direction: column; } .horas-dia-right { width: 100%; } }
+</style>
+
+<script>
+(function() {
+    var HORAS_MAX_DIA = 24;
+
+    function parseHHMM(s) {
+        if (!s || !s.trim()) return 0;
+        s = s.trim().replace(',', '.');
+        var parts = s.split(/[:\s]/);
+        var h = parseFloat(parts[0]) || 0;
+        var m = parseFloat(parts[1]) || 0;
+        return Math.round((h + m / 60) * 100) / 100;
+    }
+    function toHHMM(decimal) {
+        if (decimal === 0) return '0:00';
+        var h = Math.floor(decimal);
+        var m = Math.round((decimal - h) * 60);
+        if (m >= 60) { h++; m = 0; }
+        return h + ':' + (m < 10 ? '0' : '') + m;
+    }
+    function sumarMinutos(valorActual, minutos) {
+        var dec = parseHHMM(valorActual);
+        dec += minutos / 60;
+        if (dec > HORAS_MAX_DIA) dec = HORAS_MAX_DIA;
+        return toHHMM(dec);
+    }
+
+    document.getElementById('btnTodasTarea').addEventListener('click', function() {
+        document.getElementById('tarea_id').value = '';
+    });
+    document.getElementById('btnTodasCliente').addEventListener('click', function() {
+        document.getElementById('cliente_id').value = '';
+    });
+
+    document.querySelectorAll('.btn-rapido').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var dia = this.getAttribute('data-dia');
+            var min = parseInt(this.getAttribute('data-min'), 10);
+            var inp = document.getElementById('h_' + dia);
+            if (inp) {
+                inp.value = sumarMinutos(inp.value, min);
+            }
+        });
+    });
+
+    document.getElementById('formSemana').addEventListener('submit', function(e) {
+        for (var i = 0; i < 7; i++) {
+            var inp = document.getElementById('h_' + i);
+            if (inp) {
+                var h = parseHHMM(inp.value);
+                if (h > HORAS_MAX_DIA) {
+                    alert('No se pueden registrar más de 24 horas en un día (día ' + (i + 1) + ').');
+                    inp.focus();
+                    e.preventDefault();
+                    return;
+                }
+            }
+        }
+    });
+
+    document.getElementById('tarea_id').addEventListener('change', function() { cargarHoras(); });
+    document.getElementById('cliente_id').addEventListener('change', function() { cargarHoras(); });
+    function cargarHoras() {
+        var t = document.getElementById('tarea_id').value;
+        var c = document.getElementById('cliente_id').value;
+        var s = document.querySelector('input[name="semana"]').value;
+        if (t && c) {
+            window.location.href = '{{ url_for("horas_semana") }}?semana=' + s + '&tarea_id=' + t + '&cliente_id=' + c;
+        }
+    }
+
+    document.querySelectorAll('.btn-guardar-dia').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var dia = this.getAttribute('data-dia');
+            var fecha = this.getAttribute('data-fecha');
+            var horasInput = document.getElementById('h_' + dia);
+            var obsInput = document.getElementById('obs_' + dia);
+            var tareaId = document.getElementById('tarea_id').value;
+            var clienteId = document.getElementById('cliente_id').value;
+            var trabajadorIdEl = document.getElementById('trabajador_id');
+            var trabajadorId = trabajadorIdEl ? trabajadorIdEl.value : null;
+            
+            if (!tareaId || !clienteId) {
+                alert('Seleccione tarea y cliente antes de guardar');
+                return;
+            }
+            
+            var horas = horasInput ? horasInput.value : '';
+            var obs = obsInput ? obsInput.value : '';
+            
+            var btnOriginal = this.innerHTML;
+            this.disabled = true;
+            this.innerHTML = '⏳ Guardando...';
+            
+            var formData = new FormData();
+            formData.append('fecha', fecha);
+            formData.append('tarea_id', tareaId);
+            formData.append('cliente_id', clienteId);
+            formData.append('horas', horas);
+            formData.append('observaciones', obs);
+            if (trabajadorId) formData.append('trabajador_id', trabajadorId);
+            
+            fetch('{{ url_for("guardar_dia_individual") }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.innerHTML = '✅ Guardado';
+                    if (data.horas_hoy !== undefined) {
+                        document.getElementById('resumen-hoy').textContent = data.horas_hoy.toFixed(2).replace('.', ',') + 'h';
+                    }
+                    if (data.horas_semana !== undefined) {
+                        document.getElementById('resumen-semana').textContent = data.horas_semana.toFixed(2).replace('.', ',') + 'h';
+                    }
+                    setTimeout(function() {
+                        this.innerHTML = btnOriginal;
+                        this.disabled = false;
+                    }.bind(this), 2000);
+                } else {
+                    alert('Error: ' + (data.error || 'No se pudo guardar'));
+                    this.innerHTML = btnOriginal;
+                    this.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al guardar: ' + error.message);
+                this.innerHTML = btnOriginal;
+                this.disabled = false;
+            });
+        });
+    });
+})();
+</script>
+{% endblock %}

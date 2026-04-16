@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Resultado conciliación{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <div>
+    <h2 class="mb-0">Resultado de conciliación</h2>
+    <div class="text-muted">Ejecución: {{ run_id }}</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-primary" href="{{ url_for('conciliador_descargar', run_id=run_id, tipo='facturas') }}">Descargar Excel facturas</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('conciliador_descargar', run_id=run_id, tipo='banco') }}">Descargar Excel banco</a>
+    <a class="btn btn-secondary" href="{{ url_for('conciliador') }}">Nueva conciliación</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Conciliación 1:1</div>
+      <div class="card-body">
+        {% if r1 and r1|length %}
+          <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle">
+              <thead>
+                <tr>
+                  <th>id1</th>
+                  <th>id2</th>
+                  <th class="text-end">score</th>
+                  <th>estado</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for row in r1 %}
+                <tr>
+                  <td>{{ row.get('id1') }}</td>
+                  <td>{{ row.get('id2') }}</td>
+                  <td class="text-end">{{ "%.2f"|format(row.get('score', 0)) }}</td>
+                  <td>{{ row.get('estado') }}</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-muted">Sin resultados.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Conciliación 1:N</div>
+      <div class="card-body">
+        {% if r2 and r2|length %}
+          <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle">
+              <thead>
+                <tr>
+                  <th>id1</th>
+                  <th>ids2</th>
+                  <th class="text-end">diff</th>
+                  <th>estado</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for row in r2 %}
+                <tr>
+                  <td>{{ row.get('id1') }}</td>
+                  <td>{{ row.get('ids2') }}</td>
+                  <td class="text-end">{{ "%.2f"|format(row.get('diff', 0)) }}</td>
+                  <td>{{ row.get('estado') }}</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="text-muted">Sin resultados.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
