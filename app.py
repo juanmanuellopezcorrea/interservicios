@@ -21,13 +21,23 @@ def generar_contraseña(longitud=10):
     return ''.join(secrets.choice(alfabeto) for _ in range(longitud))
 
 app = Flask(__name__)
-# Ruta absoluta a la base de datos (evita "readonly database" según desde dónde se ejecute la app)
-basedir = os.path.abspath(os.path.dirname(__file__))
-db_path = os.path.join(basedir, 'servicios_profesionales.db').replace('\\', '/')
-app.config['SECRET_KEY'] = 'clave-secreta-cambiar-en-produccion'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
+
+# Configuracion de base de datos: usar PostgreSQL en produccion (Supabase/Vercel), SQLite en desarrollo local
+database_url = os.environ.get('POSTGRES_URL') or os.environ.get('DATABASE_URL')
+if database_url:
+    # PostgreSQL en produccion - ajustar URL si es necesario
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    # SQLite para desarrollo local
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    db_path = os.path.join(basedir, 'servicios_profesionales.db').replace('\\', '/')
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
+
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'clave-secreta-cambiar-en-produccion')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['MAIL_ADMIN_REPORT_TO'] = 'acampos@interservicios.es'
+app.config['MAIL_ADMIN_REPORT_TO'] = os.environ.get('MAIL_ADMIN_REPORT_TO', 'acampos@interservicios.es')
 
 db.init_app(app)
 
@@ -92,8 +102,10 @@ def _enviar_informe_pendientes_admin():
     except Exception:
         # Si no hay correo configurado, no rompemos la app
         return
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
+# APScheduler deshabilitado para Vercel serverless
+# Para tareas programadas usar Vercel Cron: https://vercel.com/docs/cron-jobs
+# from apscheduler.schedulers.background import BackgroundScheduler
+# from apscheduler.triggers.cron import CronTrigger
 
 
 @app.context_processor
@@ -3055,7 +3067,8 @@ def informe_horas_mensual_excel(mes, anio):
     return send_file(buf, as_attachment=True, download_name=f"informe_horas_mensual_{mes}_{anio}.xlsx", mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
-if __name__ == '__main__':
+def init_db():
+    """Inicializar base de datos y crear usuario admin por defecto."""
     with app.app_context():
         db.create_all()
         seed_catalogo()
@@ -3069,19 +3082,12 @@ if __name__ == '__main__':
             db.session.commit()
             print("Usuario administrador creado: admin / admin")
 
-        # Scheduler: informe mensual de pendientes (día 1 a las 08:00)
-        try:
-            if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
-                sched = BackgroundScheduler(daemon=True)
-                sched.add_job(
-                    func=_enviar_informe_pendientes_admin,
-                    trigger=CronTrigger(day=1, hour=8, minute=0),
-                    id="informe_pendientes_cuestionario",
-                    replace_existing=True,
-                )
-                sched.start()
-        except Exception:
-            pass
-    
+
+# Para Vercel: exponer la app como modulo
+# El scheduler de APScheduler no funciona en serverless
+# Para tareas programadas, usar Vercel Cron Jobs
+
+if __name__ == '__main__':
+    init_db()
     app.run(host='0.0.0.0', port=5000, debug=True)
 
