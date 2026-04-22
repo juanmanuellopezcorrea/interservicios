@@ -3,15 +3,10 @@
   "builds": [
     {
       "src": "api/index.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/cron/informe_mensual.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "static/**/*",
-      "use": "@vercel/static"
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
     }
   ],
   "routes": [
@@ -20,18 +15,11 @@
       "dest": "/static/$1"
     },
     {
-      "src": "/api/cron/(.*)",
-      "dest": "/api/cron/$1.py"
-    },
-    {
       "src": "/(.*)",
       "dest": "/api/index.py"
     }
   ],
-  "crons": [
-    {
-      "path": "/api/cron/informe_mensual",
-      "schedule": "0 8 1 * *"
-    }
-  ]
+  "env": {
+    "PYTHONUNBUFFERED": "1"
+  }
 }

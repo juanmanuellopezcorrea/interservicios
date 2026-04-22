@@ -1,13 +1,15 @@
 import os
 import sys
 
-# Añadir el directorio raíz al path para que pueda importar app
+# Configurar el path antes de cualquier import
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Importar la aplicacion Flask
 from app import app
 
-# Vercel requiere que la aplicación WSGI se llame 'app' o 'application'
+# Vercel requiere que la aplicacion WSGI se llame 'app' o 'application'
 application = app
 
-if __name__ == "__main__":
-    app.run()
+# Handler para Vercel serverless functions
+def handler(request):
+    return app(request.environ, request.start_response)

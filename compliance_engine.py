@@ -3,7 +3,7 @@ from datetime import datetime
 from models import db
 
 class CatalogoObligacion(db.Model):
-    __tablename__ = 'catalogo_obligacion'
+    __tablename__ = 'catalogo_obligaciones_legacy'
     id = db.Column(db.Integer, primary_key=True)
     codigo = db.Column(db.String(50), unique=True, nullable=False)
     nombre = db.Column(db.String(200), nullable=False)
@@ -26,10 +26,10 @@ class CatalogoObligacion(db.Model):
             return []
 
 class ObligacionCliente(db.Model):
-    __tablename__ = 'obligacion_cliente'
+    __tablename__ = 'obligacion_cliente_legacy'
     id = db.Column(db.Integer, primary_key=True)
     cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=False)
-    catalogo_id = db.Column(db.Integer, db.ForeignKey('catalogo_obligacion.id'), nullable=False)
+    catalogo_id = db.Column(db.Integer, db.ForeignKey('catalogo_obligaciones_legacy.id'), nullable=False)
     estado = db.Column(db.String(50), default='pendiente')
     porcentaje_cumplimiento = db.Column(db.Integer, default=0)
     items_estado_json = db.Column(db.Text)
@@ -56,8 +56,8 @@ class SolicitudPresupuesto(db.Model):
     __tablename__ = 'solicitud_presupuesto'
     id = db.Column(db.Integer, primary_key=True)
     cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=False)
-    obligacion_id = db.Column(db.Integer, db.ForeignKey('obligacion_cliente.id'))
-    catalogo_id = db.Column(db.Integer, db.ForeignKey('catalogo_obligacion.id'))
+    obligacion_id = db.Column(db.Integer, db.ForeignKey('obligacion_cliente_legacy.id'))
+    catalogo_id = db.Column(db.Integer, db.ForeignKey('catalogo_obligaciones_legacy.id'))
     estado = db.Column(db.String(50), default='solicitado')
     importe_propuesto = db.Column(db.Float)
     importe_aceptado = db.Column(db.Float)

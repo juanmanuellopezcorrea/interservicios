@@ -3106,10 +3106,7 @@ if __name__ == '__main__':
     
     app.run(host='0.0.0.0', port=5000, debug=True)
 else:
-    # En producción (Vercel), inicializar la DB si DATABASE_URL está configurada
-    if os.environ.get('DATABASE_URL'):
-        try:
-            init_db()
-        except Exception as e:
-            print(f"Warning: Could not initialize DB: {e}")
+    # En producción (Vercel), NO inicializar la DB automáticamente
+    # Las tablas ya existen en Supabase
+    pass
 
