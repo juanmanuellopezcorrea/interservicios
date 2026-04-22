@@ -1,4 +1,4 @@
--- Crear tabla solicitud_presupuesto si no existe
+-- Create solicitud_presupuesto table if not exists
 CREATE TABLE IF NOT EXISTS solicitud_presupuesto (
     id SERIAL PRIMARY KEY,
     cliente_id INTEGER NOT NULL REFERENCES clientes(id),
