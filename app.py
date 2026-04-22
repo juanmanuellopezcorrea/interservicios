@@ -24,11 +24,11 @@ app = Flask(__name__)
 # Ruta absoluta a la base de datos (evita "readonly database" según desde dónde se ejecute la app)
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-# Configuración desde variables de entorno para producción (Vercel)
-# En producción se debe usar una base de datos PostgreSQL (ej: Supabase, Neon)
-DATABASE_URL = os.environ.get('DATABASE_URL')
+# Configuración desde variables de entorno para producción (Vercel/Supabase)
+# Prioridad: POSTGRES_URL (Supabase) > DATABASE_URL > SQLite local
+DATABASE_URL = os.environ.get('POSTGRES_URL') or os.environ.get('DATABASE_URL')
 if DATABASE_URL:
-    # Vercel/Heroku usan postgres:// pero SQLAlchemy requiere postgresql://
+    # Supabase/Vercel usan postgres:// pero SQLAlchemy requiere postgresql://
     if DATABASE_URL.startswith('postgres://'):
         DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
