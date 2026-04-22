@@ -4,3 +4,6 @@ Flask-Mail==0.9.1
 Werkzeug==3.0.1
 openpyxl>=3.1.5
 APScheduler==3.10.4
+psycopg2-binary==2.9.9
+python-dotenv==1.0.0
+gunicorn==21.2.0

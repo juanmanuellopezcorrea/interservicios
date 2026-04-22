@@ -23,11 +23,23 @@ def generar_contraseña(longitud=10):
 app = Flask(__name__)
 # Ruta absoluta a la base de datos (evita "readonly database" según desde dónde se ejecute la app)
 basedir = os.path.abspath(os.path.dirname(__file__))
-db_path = os.path.join(basedir, 'servicios_profesionales.db').replace('\\', '/')
-app.config['SECRET_KEY'] = 'clave-secreta-cambiar-en-produccion'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
+
+# Configuración desde variables de entorno para producción (Vercel)
+# En producción se debe usar una base de datos PostgreSQL (ej: Supabase, Neon)
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    # Vercel/Heroku usan postgres:// pero SQLAlchemy requiere postgresql://
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+else:
+    # Desarrollo local: usar SQLite
+    db_path = os.path.join(basedir, 'servicios_profesionales.db').replace('\\', '/')
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
+
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'clave-secreta-cambiar-en-produccion')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['MAIL_ADMIN_REPORT_TO'] = 'acampos@interservicios.es'
+app.config['MAIL_ADMIN_REPORT_TO'] = os.environ.get('MAIL_ADMIN_REPORT_TO', 'acampos@interservicios.es')
 
 db.init_app(app)
 
@@ -3055,7 +3067,8 @@ def informe_horas_mensual_excel(mes, anio):
     return send_file(buf, as_attachment=True, download_name=f"informe_horas_mensual_{mes}_{anio}.xlsx", mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
-if __name__ == '__main__':
+def init_db():
+    """Inicializa la base de datos y crea tablas si no existen."""
     with app.app_context():
         db.create_all()
         seed_catalogo()
@@ -3069,19 +3082,34 @@ if __name__ == '__main__':
             db.session.commit()
             print("Usuario administrador creado: admin / admin")
 
-        # Scheduler: informe mensual de pendientes (día 1 a las 08:00)
-        try:
-            if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
-                sched = BackgroundScheduler(daemon=True)
-                sched.add_job(
-                    func=_enviar_informe_pendientes_admin,
-                    trigger=CronTrigger(day=1, hour=8, minute=0),
-                    id="informe_pendientes_cuestionario",
-                    replace_existing=True,
-                )
-                sched.start()
-        except Exception:
-            pass
+
+# En Vercel (serverless), el scheduler en segundo plano no funciona.
+# Para tareas programadas en producción, usa Vercel Cron Jobs.
+# Ver: https://vercel.com/docs/cron-jobs
+
+if __name__ == '__main__':
+    init_db()
+    
+    # Scheduler: solo en desarrollo local
+    try:
+        if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
+            sched = BackgroundScheduler(daemon=True)
+            sched.add_job(
+                func=_enviar_informe_pendientes_admin,
+                trigger=CronTrigger(day=1, hour=8, minute=0),
+                id="informe_pendientes_cuestionario",
+                replace_existing=True,
+            )
+            sched.start()
+    except Exception:
+        pass
     
     app.run(host='0.0.0.0', port=5000, debug=True)
+else:
+    # En producción (Vercel), inicializar la DB si DATABASE_URL está configurada
+    if os.environ.get('DATABASE_URL'):
+        try:
+            init_db()
+        except Exception as e:
+            print(f"Warning: Could not initialize DB: {e}")
 

@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# SQLite (solo para desarrollo local)
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Vercel
+.vercel
+
+# Conciliador runs (archivos temporales)
+conciliador_runs/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
